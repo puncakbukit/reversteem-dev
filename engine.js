@@ -146,7 +146,10 @@ function deriveGameStateFull(rootPost, replies) {
   const board = initialBoard();
   let appliedMoves = 0;
   let turn = "black";
-  let lastMoveTime = rootPost.created;
+  // Clock starts when both players are present (gameStartTime = join time).
+  // Using rootPost.created would make moves by the first player appear timed-out
+  // if white joined late, since the clock would have been running since creation.
+  let lastMoveTime = gameStartTime || rootPost.created;
 
   for (const move of moves) {
     if (move.moveNumber !== appliedMoves) continue;
@@ -343,11 +346,11 @@ function formatTimeout(minutes) {
 
 function isTimeoutClaimable(state) {
   if (!state || state.finished || !state.currentPlayer || !state.whitePlayer) return false;
-  const lastMoveTime = state.moves.length > 0
-    ? state.moves[state.moves.length - 1].created
-    : state.gameStartTime || state.rootCreated;
-  if (!lastMoveTime) return false;
-  const minutesPassed = (new Date() - new Date(lastMoveTime)) / (1000 * 60);
+  // Use the authoritative lastMoveTime from derived state — this is set to
+  // gameStartTime (join time) initially, then updated on each applied move.
+  // This ensures the clock only starts when both players are present.
+  if (!state.lastMoveTime) return false;
+  const minutesPassed = (new Date() - new Date(state.lastMoveTime)) / (1000 * 60);
   return minutesPassed >= state.timeoutMinutes;
 }
 
