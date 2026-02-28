@@ -91,12 +91,16 @@ function deriveGameStateFull(rootPost, replies) {
   let timeoutMinutes = DEFAULT_TIMEOUT_MINUTES;
   let timeoutClaims = [];
 
+  let _invites = []; // empty = open game
   try {
     const rootMeta = JSON.parse(rootPost.json_metadata);
     _blackPlayer = rootMeta.black;
     let tm = parseInt(rootMeta.timeoutMinutes);
     if (isNaN(tm)) tm = DEFAULT_TIMEOUT_MINUTES;
     timeoutMinutes = Math.max(MIN_TIMEOUT_MINUTES, Math.min(tm, MAX_TIMEOUT_MINUTES));
+    if (Array.isArray(rootMeta.invites)) {
+      _invites = rootMeta.invites.map(u => String(u).toLowerCase()).filter(Boolean);
+    }
   } catch {}
 
   replies.sort((a, b) => new Date(a.created) - new Date(b.created));
@@ -107,8 +111,11 @@ function deriveGameStateFull(rootPost, replies) {
       if (!meta.app?.startsWith(APP_NAME + "/")) return;
 
       if (meta.action === "join" && !_whitePlayer && reply.author !== _blackPlayer) {
-        _whitePlayer = reply.author;
-        gameStartTime = reply.created;
+        // If invites list is set, only invited users may join
+        if (_invites.length === 0 || _invites.includes(reply.author.toLowerCase())) {
+          _whitePlayer = reply.author;
+          gameStartTime = reply.created;
+        }
       }
 
       if (meta.action === "timeout_claim") {
@@ -200,6 +207,7 @@ function deriveGameStateFull(rootPost, replies) {
     title: rootPost?.title || "",
     blackPlayer: _blackPlayer,
     whitePlayer: _whitePlayer,
+    invites: _invites,
     board,
     currentPlayer: finished ? null : turn,
     appliedMoves,

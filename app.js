@@ -268,7 +268,12 @@ const GameView = {
     canJoin() {
       const s = this.gameState;
       if (!s || s.finished || s.whitePlayer) return false;
-      return this.hasKeychain && !!this.username && this.username !== s.blackPlayer;
+      if (!this.hasKeychain || !this.username || this.username === s.blackPlayer) return false;
+      // If the game has an invite list, only those users may join
+      if (s.invites && s.invites.length > 0) {
+        return s.invites.includes(this.username.toLowerCase());
+      }
+      return true;
     },
     // The author+permlink that a spectator comment should reply to.
     // Replies to last move while game is in progress; replies to root otherwise.
@@ -321,6 +326,7 @@ const GameView = {
           this.gameState.lastMoveTime = state.lastMoveTime;
           // whitePlayer may have just joined
           this.gameState.whitePlayer = state.whitePlayer;
+          this.gameState.invites = state.invites || [];
         }
 
         // Fetch account data only when a player username is newly seen
@@ -495,6 +501,15 @@ const GameView = {
         <!-- Join -->
         <div v-if="canJoin" style="margin:10px 0;">
           <button @click="joinGame">Join as White ⚪</button>
+        </div>
+
+        <!-- Invite list (shown when game is open and has restrictions) -->
+        <div v-if="!gameState.whitePlayer && gameState.invites && gameState.invites.length > 0"
+          style="margin:8px 0; font-size:13px; color:#555;">
+          Open to:
+          <span v-for="(u, i) in gameState.invites" :key="u">
+            <a :href="'#/@' + u" style="color:#2e7d32; text-decoration:none; font-weight:bold;">@{{ u }}</a><span v-if="i < gameState.invites.length - 1">, </span>
+          </span>
         </div>
 
         <!-- Board -->
@@ -1213,7 +1228,7 @@ const App = {
       localStorage.removeItem("steem_user");
     }
 
-    async function startGame({ title, timeoutMinutes: rawTimeout } = {}) {
+    async function startGame({ title, timeoutMinutes: rawTimeout, invites: rawInvites } = {}) {
       if (!window.steem_keychain || !username.value) {
         notify("Please log in first.", "error");
         return;
@@ -1222,12 +1237,28 @@ const App = {
       const clampedTimeout = Math.max(MIN_TIMEOUT_MINUTES, Math.min(rawTimeout || DEFAULT_TIMEOUT_MINUTES, MAX_TIMEOUT_MINUTES));
       const gameTitle = (title || defaultTitle.value).trim();
       const permlink = `${APP_NAME}-${Date.now()}`;
+
+      // Sanitise invites: strip @, lowercase, dedupe, exclude self, cap at 3
+      const invites = (rawInvites || [])
+        .map(u => u.trim().toLowerCase().replace(/^@/, ""))
+        .filter(Boolean)
+        .filter(u => u !== username.value.toLowerCase())
+        .filter((u, i, a) => a.indexOf(u) === i)
+        .slice(0, 3);
+
       const meta = { app: APP_INFO, type: "game_start", black: username.value, white: null, timeoutMinutes: clampedTimeout, status: "open" };
+      if (invites.length > 0) meta.invites = invites;
+
       const board = initialBoard();
+      const inviteLine = invites.length > 0
+        ? `Invited: ${invites.map(u => `@${u}`).join(", ")} (only they can join)\n`
+        : "";
       const body =
         `## New Reversteem Game\n\n` +
         `Black: @${username.value}\n` +
-        `Timeout per move: ${clampedTimeout} minutes\n\n` +
+        `Timeout per move: ${clampedTimeout} minutes\n` +
+        inviteLine +
+        `\n` +
         boardToMarkdown(board) +
         `\n\n---\nMove by commenting via [Reversteem](${LIVE_DEMO}).`;
 
