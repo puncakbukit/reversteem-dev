@@ -306,7 +306,12 @@ const GameView = {
       return `⏳ Waiting for @${playerToMove} (${colorLabel})`; // @username replaced in template
     },
     canClaimTimeout() {
-      return isTimeoutClaimable(this.gameState) && !!this.username;
+      const s = this.gameState;
+      if (!isTimeoutClaimable(s) || !this.username) return false;
+      // Only the opponent of the timed-out player may claim.
+      // currentPlayer is the one who timed out — the winner is the other.
+      const expectedWinner = s.currentPlayer === "black" ? s.whitePlayer : s.blackPlayer;
+      return this.username === expectedWinner;
     },
     loserName() {
       const s = this.gameState;
@@ -505,6 +510,12 @@ const GameView = {
     postTimeoutClaim() {
       const state = this.gameState;
       if (!state) return;
+      // Guard: only the opponent of the timed-out player may post a claim
+      const expectedWinner = state.currentPlayer === "black" ? state.whitePlayer : state.blackPlayer;
+      if (this.username !== expectedWinner) {
+        this.notify("You are not the opponent of the timed-out player.", "error");
+        return;
+      }
       const meta = {
         app: APP_INFO,
         action: "timeout_claim",
