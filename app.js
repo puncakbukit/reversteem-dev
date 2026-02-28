@@ -13,18 +13,32 @@ const { createRouter, createWebHashHistory } = VueRouter;
 // ---- DashboardView ----
 const DashboardView = {
   name: "DashboardView",
-  inject: ["username", "hasKeychain", "notify"],
+  inject: ["username", "hasKeychain", "notify", "setInviteCount"],
   components: { GamePreviewComponent, GameFilterComponent },
   data() {
     return { games: [], loading: true, filterFn: null };
   },
   computed: {
+    invitedGames() {
+      if (!this.username) return [];
+      return this.games.filter(g =>
+        !g.whitePlayer &&
+        Array.isArray(g.invites) &&
+        g.invites.includes(this.username.toLowerCase())
+      );
+    },
     filteredGames() {
-      if (!this.filterFn) return this.games;
-      return this.games.filter(this.filterFn);
+      // Exclude already-shown invited games from the main list
+      const invitedPermalinks = new Set(this.invitedGames.map(g => g.permlink));
+      const base = this.games.filter(g => !invitedPermalinks.has(g.permlink));
+      if (!this.filterFn) return base;
+      return base.filter(this.filterFn);
     },
     featuredGames() { return this.filteredGames.slice(0, 2); },
     otherGames()    { return this.filteredGames.slice(2); }
+  },
+  watch: {
+    invitedGames(val) { this.setInviteCount(val.length); }
   },
   async created() {
     await this.loadGames();
@@ -37,6 +51,7 @@ const DashboardView = {
         const enriched = await enrichGamesWithWhitePlayer(raw);
         await updateEloRatingsFromGames(enriched);
         this.games = enriched.sort((a, b) => new Date(b.created) - new Date(a.created));
+        this.setInviteCount(this.invitedGames.length);
       } catch (e) {
         console.error("Failed to load games", e);
       }
@@ -88,6 +103,33 @@ const DashboardView = {
     <div>
       <div v-if="loading"><p>Loading games...</p></div>
       <div v-else>
+        <!-- Invitations banner -->
+        <div v-if="invitedGames.length" style="
+          margin: 12px auto; padding: 14px 18px; max-width: 600px;
+          background: #fff8e1; border: 2px solid #f9a825;
+          border-radius: 8px; text-align: left;
+        ">
+          <div style="font-weight: bold; margin-bottom: 8px; color: #e65100;">
+            📬 You have {{ invitedGames.length === 1 ? '1 invitation' : invitedGames.length + ' invitations' }}
+          </div>
+          <div v-for="game in invitedGames" :key="game.permlink"
+            style="display:flex; align-items:center; justify-content:space-between;
+              padding: 6px 0; border-top: 1px solid #ffe082; flex-wrap:wrap; gap:6px;"
+          >
+            <span style="font-size:13px; color:#333;">
+              <a :href="'#/@' + game.blackPlayer" style="color:#2e7d32; text-decoration:none; font-weight:bold;">@{{ game.blackPlayer }}</a>
+              invited you to a
+              <strong>{{ Object.entries(TIME_PRESETS).find(([,v]) => v === game.timeoutMinutes)?.[0] || game.timeoutMinutes + ' min' }}</strong>
+              game
+            </span>
+            <button
+              @click="$emit('view-game', game) || $router.push('/game/' + game.author + '/' + game.permlink)"
+              style="padding: 4px 14px; background: #f9a825; border: none;
+                border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 13px;"
+            >View &amp; Join →</button>
+          </div>
+        </div>
+
         <game-filter-component @filter="fn => filterFn = fn"></game-filter-component>
         <p v-if="!filteredGames.length" style="color:#888;">No games match the current filter.</p>
         <div id="featuredGame" v-if="featuredGames.length">
@@ -1311,9 +1353,12 @@ const App = {
     // Provide shared state to all descendant components (including route views).
     // This is the correct Vue pattern for passing data that isn't route-param-based
     // down through <router-view> without manually threading props on every route.
+    const inviteCount = ref(0);
+    function setInviteCount(n) { inviteCount.value = n; }
     provide("username", username);
     provide("hasKeychain", hasKeychain);
     provide("notify", notify);
+    provide("setInviteCount", setInviteCount);
 
     return {
       username,
@@ -1333,7 +1378,8 @@ const App = {
       updateTimeout,
       updateAccountCache,
       TIME_PRESETS,
-      getUserRating
+      getUserRating,
+      inviteCount
     };
   },
 
@@ -1351,7 +1397,12 @@ const App = {
         style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
         active-class=""
         exact-active-class="nav-active"
-      >Home</router-link>
+      >Home<span v-if="inviteCount > 0" style="
+          display:inline-flex; align-items:center; justify-content:center;
+          background:#c62828; color:white; font-size:10px; font-weight:bold;
+          border-radius:50%; width:16px; height:16px; margin-left:4px;
+          vertical-align:middle; line-height:1;
+        ">{{ inviteCount }}</span></router-link>
       <router-link
         v-if="username"
         :to="'/@' + username"
