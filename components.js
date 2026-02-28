@@ -591,7 +591,10 @@ const GamePreviewComponent = {
   methods: {
     getGameStatus,
     canJoin() {
-      return this.username && !this.game.whitePlayer && this.username !== this.game.blackPlayer;
+      if (!this.username || this.game.whitePlayer || this.username === this.game.blackPlayer) return false;
+      const invites = Array.isArray(this.game.invites) ? this.game.invites : [];
+      if (invites.length > 0) return invites.includes(this.username.toLowerCase());
+      return true;
     }
   },
   components: { MiniBoardComponent, PlayerBarComponent, OthelloTableComponent },

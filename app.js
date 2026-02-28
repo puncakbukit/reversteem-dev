@@ -59,6 +59,13 @@ const DashboardView = {
         return;
       }
 
+      // Guard: enforce invite list before posting to blockchain
+      const invites = Array.isArray(game.invites) ? game.invites : [];
+      if (invites.length > 0 && !invites.includes(this.username.toLowerCase())) {
+        this.notify("You are not invited to this game.", "error");
+        return;
+      }
+
       const meta = { app: APP_INFO, action: "join" };
       const body = `## @${this.username} joined as White\n\nGame link: ${LIVE_DEMO}#/game/${game.author}/${game.permlink}`;
 
@@ -153,6 +160,13 @@ const ProfileView = {
         this.notify("You cannot join your own game.", "error");
         return;
       }
+      // Guard: enforce invite list before posting to blockchain
+      const invites = Array.isArray(game.invites) ? game.invites : [];
+      if (invites.length > 0 && !invites.includes(this.username.toLowerCase())) {
+        this.notify("You are not invited to this game.", "error");
+        return;
+      }
+
       const meta = { app: APP_INFO, action: "join" };
       const body = `## @${this.username} joined as White\n\nGame link: ${LIVE_DEMO}#/game/${game.author}/${game.permlink}`;
       keychainPost(
