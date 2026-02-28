@@ -496,7 +496,23 @@ const GameView = {
       flips.forEach(f => (simulatedBoard[f] = state.currentPlayer));
 
       const meta = { app: APP_INFO, action: "move", index, moveNumber: state.appliedMoves };
-      const body = `## Move by @${this.username}\n\nPlayed at ${indexToCoord(index)}\n\n${boardToMarkdown(simulatedBoard)}`;
+
+      // Detect if this move ends the game
+      const nextColor = state.currentPlayer === "black" ? "white" : "black";
+      const blackCanMove = hasAnyValidMove(simulatedBoard, "black");
+      const whiteCanMove = hasAnyValidMove(simulatedBoard, "white");
+      const gameEndsAfterMove = !blackCanMove && !whiteCanMove;
+      let finishSuffix = "";
+      if (gameEndsAfterMove) {
+        const score = countDiscs(simulatedBoard);
+        let resultLine;
+        if (score.black > score.white) resultLine = `⚫ ${state.blackPlayer} wins! (${score.black}–${score.white})`;
+        else if (score.white > score.black) resultLine = `⚪ ${state.whitePlayer} wins! (${score.white}–${score.black})`;
+        else resultLine = `🤝 Draw! (${score.black}–${score.white})`;
+        finishSuffix = `\n\n---\n🏁 **Game Over** — ${resultLine}`;
+      }
+
+      const body = `## Move by @${this.username}\n\nPlayed at ${indexToCoord(index)}\n\n${boardToMarkdown(simulatedBoard)}${finishSuffix}`;
 
       keychainPost(
         this.username, "", body,
@@ -529,8 +545,10 @@ const GameView = {
         claimAgainst: state.currentPlayer,
         moveNumber: state.appliedMoves
       };
+      const timedOutPlayer = state.currentPlayer === "black" ? state.blackPlayer : state.whitePlayer;
+      const claimBody = `## Timeout Claim by @${this.username}\n\n@${timedOutPlayer} exceeded the ${formatTimeout(state.timeoutMinutes)} move time limit.\n\n---\n🏁 **Game Over** — ⏰ @${this.username} wins by timeout!`;
       keychainPost(
-        this.username, "", `Timeout claim by @${this.username}`,
+        this.username, "", claimBody,
         this.permlink, this.author,
         meta,
         `reversteem-timeout-${Date.now()}`, "",
