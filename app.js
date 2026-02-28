@@ -313,6 +313,13 @@ const GameView = {
       const expectedWinner = s.currentPlayer === "black" ? s.whitePlayer : s.blackPlayer;
       return this.username === expectedWinner;
     },
+    isLosingByTimeout() {
+      const s = this.gameState;
+      if (!isTimeoutClaimable(s) || !this.username || s.finished) return false;
+      // The timed-out player is whoever's turn it currently is
+      const timedOutPlayer = s.currentPlayer === "black" ? s.blackPlayer : s.whitePlayer;
+      return this.username === timedOutPlayer;
+    },
     loserName() {
       const s = this.gameState;
       if (!s) return "";
@@ -563,6 +570,15 @@ const GameView = {
         <!-- Timeout Claim -->
         <div v-if="canClaimTimeout" style="margin:10px 0;">
           <button @click="postTimeoutClaim">Claim Timeout Victory vs @{{ loserName }}</button>
+        </div>
+
+        <!-- Timeout loss warning for the player who ran out of time -->
+        <div v-if="isLosingByTimeout" style="
+          margin: 10px auto; padding: 12px 16px; max-width: 480px;
+          background: #fff3e0; border: 2px solid #e65100;
+          border-radius: 8px; font-weight: bold; color: #b71c1c;
+        ">
+          ⏰ Your time is up! Your opponent may claim timeout victory against you at any moment.
         </div>
 
         <!-- Turn Indicator -->
