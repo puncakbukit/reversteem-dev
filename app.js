@@ -57,6 +57,10 @@ const DashboardView = {
       }
       this.loading = false;
     },
+    timePresetLabel(mins) {
+      const preset = Object.entries(TIME_PRESETS).find(([, v]) => v === mins);
+      return preset ? preset[0].charAt(0).toUpperCase() + preset[0].slice(1) : mins + ' min';
+    },
     viewGame(game) {
       this.$router.push(`/game/${game.author}/${game.permlink}`);
     },
@@ -119,7 +123,7 @@ const DashboardView = {
             <span style="font-size:13px; color:#333;">
               <a :href="'#/@' + game.blackPlayer" style="color:#2e7d32; text-decoration:none; font-weight:bold;">@{{ game.blackPlayer }}</a>
               invited you to a
-              <strong>{{ Object.entries(TIME_PRESETS).find(([,v]) => v === game.timeoutMinutes)?.[0] || game.timeoutMinutes + ' min' }}</strong>
+              <strong>{{ timePresetLabel(game.timeoutMinutes) }}</strong>
               game
             </span>
             <button
