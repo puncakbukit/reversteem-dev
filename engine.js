@@ -233,6 +233,14 @@ function deriveGameState(rootPost, replies) {
 
   if (cache && cache.lastCreated === latestCreated && cache.replyCount === replies.length) {
     cache.state.title = rootPost.title || "";
+    // Always re-read invites from root post — never trust cached value,
+    // as the invite list is set at creation and must always be enforced.
+    try {
+      const m = JSON.parse(rootPost.json_metadata);
+      cache.state.invites = Array.isArray(m.invites)
+        ? m.invites.map(u => String(u).toLowerCase()).filter(Boolean)
+        : [];
+    } catch { cache.state.invites = []; }
     return cache.state;
   }
 

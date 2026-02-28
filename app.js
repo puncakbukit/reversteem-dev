@@ -269,9 +269,10 @@ const GameView = {
       const s = this.gameState;
       if (!s || s.finished || s.whitePlayer) return false;
       if (!this.hasKeychain || !this.username || this.username === s.blackPlayer) return false;
-      // If the game has an invite list, only those users may join
-      if (s.invites && s.invites.length > 0) {
-        return s.invites.includes(this.username.toLowerCase());
+      // invites is always an array after the cache fix ([] = open game)
+      const invites = Array.isArray(s.invites) ? s.invites : [];
+      if (invites.length > 0) {
+        return invites.includes(this.username.toLowerCase());
       }
       return true;
     },
@@ -389,6 +390,12 @@ const GameView = {
     async joinGame() {
       const state = this.gameState;
       if (!state) return;
+      // Guard: enforce invite list before posting to blockchain
+      const invites = Array.isArray(state.invites) ? state.invites : [];
+      if (invites.length > 0 && !invites.includes(this.username.toLowerCase())) {
+        this.notify("You are not invited to this game.", "error");
+        return;
+      }
       const meta = { app: APP_INFO, action: "join" };
       const body = `## @${this.username} joined as White\n\nGame link: ${LIVE_DEMO}#/game/${this.author}/${this.permlink}`;
       keychainPost(
