@@ -1583,7 +1583,27 @@ const App = {
       >Logout</a>
     </nav>
 
-    <template v-if="!currentRoute || (!currentRoute.path.startsWith('/game/') && currentRoute.path !== '/leaderboard' && currentRoute.path !== '/about')">
+    <!-- Login form: always visible on all pages when Login link is clicked -->
+    <div v-if="!username && showLoginForm" style="margin:8px 0;">
+      <auth-controls-component
+        :username="username"
+        :has-keychain="hasKeychain"
+        :time-presets="TIME_PRESETS"
+        :timeout-minutes="timeoutMinutes"
+        :login-error="loginError"
+        :default-title="defaultTitle"
+        :is-submitting="isStartingGame"
+        :show-login-form="showLoginForm"
+        @login="login"
+        @logout="logout"
+        @start-game="startGame"
+        @update-timeout="updateTimeout"
+        @close-login-form="showLoginForm = false"
+      ></auth-controls-component>
+    </div>
+
+    <!-- Game creation controls: only shown on home/profile pages, and only when logged in -->
+    <template v-if="username && (!currentRoute || (!currentRoute.path.startsWith('/game/') && currentRoute.path !== '/leaderboard' && currentRoute.path !== '/about'))">
       <auth-controls-component
         :username="username"
         :has-keychain="hasKeychain"
