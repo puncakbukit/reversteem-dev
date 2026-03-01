@@ -663,6 +663,100 @@ const GameView = {
 };
 
 
+// ---- LeaderboardView ----
+const LeaderboardView = {
+  name: "LeaderboardView",
+  data() {
+    return { rows: [], loading: true };
+  },
+  async created() {
+    this.loading = true;
+    try {
+      // Pull all finished games from the global feed to build/refresh ELO cache
+      const posts = await callWithFallbackAsync(
+        steem.api.getDiscussionsByCreated,
+        [{ tag: APP_NAME, limit: 100 }]
+      );
+      const games = posts.filter(post => {
+        try {
+          const meta = JSON.parse(post.json_metadata);
+          return meta.app?.startsWith(APP_NAME + "/") && meta.type === "game_start";
+        } catch { return false; }
+      });
+      await updateEloRatingsFromGames(games);
+    } catch (e) {
+      console.error("Leaderboard: failed to refresh ELO cache", e);
+    }
+
+    // Read ratings from cache and sort descending
+    const cache = getEloCache();
+    if (cache && cache.ratings) {
+      this.rows = Object.entries(cache.ratings)
+        .map(([username, rating]) => ({ username, rating: Math.round(rating) }))
+        .sort((a, b) => b.rating - a.rating);
+    }
+    this.loading = false;
+  },
+  methods: {
+    medalFor(rank) {
+      if (rank === 1) return "🥇";
+      if (rank === 2) return "🥈";
+      if (rank === 3) return "🥉";
+      return rank;
+    },
+    ratingColor(rating) {
+      if (rating >= 1400) return "#c62828";   // red   – top tier
+      if (rating >= 1300) return "#e65100";   // orange
+      if (rating >= 1200) return "#2e7d32";   // green – baseline
+      return "#555";                           // grey  – below baseline
+    }
+  },
+  template: `
+    <div style="max-width:600px; margin:20px auto; padding:0 16px;">
+      <h2 style="margin-bottom:4px;">🏆 Leaderboard</h2>
+      <p style="color:#666; font-size:13px; margin-bottom:16px;">
+        ELO ratings are derived locally from on-chain game history.
+      </p>
+
+      <div v-if="loading" style="color:#888;">Loading ratings...</div>
+      <div v-else-if="!rows.length" style="color:#888;">No rated players yet.</div>
+      <table v-else style="width:100%; border-collapse:collapse; font-size:14px;">
+        <thead>
+          <tr style="background:#2e7d32; color:white;">
+            <th style="padding:10px 12px; text-align:center; width:48px;">Rank</th>
+            <th style="padding:10px 12px; text-align:left;">Player</th>
+            <th style="padding:10px 12px; text-align:right; width:80px;">ELO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(row, i) in rows"
+            :key="row.username"
+            :style="{
+              background: i % 2 === 0 ? '#fafafa' : 'white',
+              borderBottom: '1px solid #eee'
+            }"
+          >
+            <td style="padding:9px 12px; text-align:center; font-size:16px;">
+              {{ medalFor(i + 1) }}
+            </td>
+            <td style="padding:9px 12px;">
+              <a
+                :href="'#/@' + row.username"
+                style="color:#2e7d32; text-decoration:none; font-weight:bold;"
+              >@{{ row.username }}</a>
+            </td>
+            <td
+              style="padding:9px 12px; text-align:right; font-weight:bold; font-variant-numeric:tabular-nums;"
+              :style="{ color: ratingColor(row.rating) }"
+            >{{ row.rating }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `
+};
+
 // ---- AboutView ----
 const AboutView = {
   name: "AboutView",
@@ -1266,6 +1360,7 @@ const routes = [
   { path: "/",                         component: DashboardView },
   { path: "/game/:author/:permlink",   component: GameView },
   { path: "/@:user",                   component: ProfileView },
+  { path: "/leaderboard",              component: LeaderboardView },
   { path: "/about",                    component: AboutView },
   { path: "/license",                  component: LicenseView }
 ];
@@ -1472,6 +1567,11 @@ const App = {
           border-radius:50%; width:16px; height:16px; margin-left:4px;
           vertical-align:middle; line-height:1;
         ">{{ inviteCount }}</span></router-link>
+      <router-link
+        to="/leaderboard"
+        style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
+        exact-active-class="nav-active"
+      >Leaderboard</router-link>
       <router-link
         v-if="username"
         :to="'/@' + username"
