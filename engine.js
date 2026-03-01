@@ -203,6 +203,8 @@ function deriveGameStateFull(rootPost, replies) {
   for (const claim of timeoutClaims) {
     if (finished) break;
     if (claim.moveNumber !== appliedMoves) continue;
+    // First move is exempt — no timeout claim can be valid before any move is played
+    if (appliedMoves === 0) continue;
 
     const expectedWinner = turn === "black" ? _whitePlayer : _blackPlayer;
     if (claim.author !== expectedWinner) continue;
@@ -356,9 +358,13 @@ function formatTimeout(minutes) {
 
 function isTimeoutClaimable(state) {
   if (!state || state.finished || !state.currentPlayer || !state.whitePlayer) return false;
+  // The very first move (appliedMoves === 0) is exempt from timeout.
+  // Black may not be aware white has joined yet (e.g. they left their browser
+  // while waiting for an opponent), so it would be unfair to time them out
+  // before they have even had a chance to respond.
+  if (state.appliedMoves === 0) return false;
   // Use the authoritative lastMoveTime from derived state — this is set to
   // gameStartTime (join time) initially, then updated on each applied move.
-  // This ensures the clock only starts when both players are present.
   if (!state.lastMoveTime) return false;
   const minutesPassed = (new Date() - steemDate(state.lastMoveTime)) / (1000 * 60);
   return minutesPassed >= state.timeoutMinutes;
