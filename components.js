@@ -140,7 +140,8 @@ const AuthControlsComponent = {
     timePresets: Object,
     timeoutMinutes: Number,
     loginError: String,
-    defaultTitle: String
+    defaultTitle: String,
+    isSubmitting: { type: Boolean, default: false }
   },
   emits: ["login", "logout", "start-game", "update-timeout"],
   data() {
@@ -301,7 +302,7 @@ const AuthControlsComponent = {
         </div>
 
         <br/>
-        <button @click="submitStartGame">Start New Game</button>
+        <button @click="submitStartGame" :disabled="isSubmitting">Start New Game</button>
         <p>Welcome <a :href="'#/@' + username" style="color:#2e7d32;font-weight:bold;text-decoration:none;">@{{ username }}</a></p>
       </div>
     </div>
