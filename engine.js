@@ -388,13 +388,13 @@ function boardToMarkdown(boardArray) {
 function movesToTranscript(moves, blackPlayer, whitePlayer) {
   if (!moves || moves.length === 0) return "";
   let md = "### Move Transcript\n\n";
-  md += "| # | Player | Color | Square | Time |\n";
-  md += "|---|--------|-------|--------|------|\n";
+  md += "| # | Color | Square | Time |\n";
+  md += "|---|-------|--------|------|\n";
   moves.forEach((move, i) => {
     const color = move.author === blackPlayer ? "⚫ Black" : "⚪ White";
     const square = indexToCoord(move.index);
     const time = steemDate(move.created).toUTCString();
-    md += `| ${i + 1} | @${move.author} | ${color} | ${square} | ${time} |\n`;
+    md += `| ${i + 1} | ${color} | ${square} | ${time} |\n`;
   });
   return md;
 }

@@ -554,7 +554,6 @@ const MoveTranscriptComponent = {
           <thead>
             <tr style="color:#888; border-bottom:1px solid #333;">
               <th style="text-align:left; padding:3px 8px; font-weight:normal;">#</th>
-              <th style="text-align:left; padding:3px 8px; font-weight:normal;">Player</th>
               <th style="text-align:left; padding:3px 8px; font-weight:normal;">Color</th>
               <th style="text-align:left; padding:3px 8px; font-weight:normal;">Square</th>
               <th style="text-align:left; padding:3px 8px; font-weight:normal;">Time</th>
@@ -570,9 +569,6 @@ const MoveTranscriptComponent = {
               }"
             >
               <td style="padding:3px 8px; color:#555;">{{ row.num }}</td>
-              <td style="padding:3px 8px;">
-                <a :href="'#/@' + row.author" style="color:#4fc3f7; text-decoration:none;">@{{ row.author }}</a>
-              </td>
               <td style="padding:3px 8px;">{{ row.colorLabel }}</td>
               <td style="padding:3px 8px; font-weight:bold; color:#ffeb3b;">{{ row.square }}</td>
               <td style="padding:3px 8px; color:#888;">{{ row.time }}</td>
