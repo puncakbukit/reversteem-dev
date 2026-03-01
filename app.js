@@ -1314,44 +1314,6 @@ MIT
   `
 };
 
-// ---- LicenseView ----
-const LicenseView = {
-  name: "LicenseView",
-  data() {
-    return { text: `MIT License
-
-Copyright (c) 2025 Reversteem Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.` };
-  },
-  template: `
-    <div style="max-width:700px; margin:40px auto; padding:0 16px;">
-      <h2 style="text-align:center;">License</h2>
-      <pre style="
-        background:#f4f4f4; border-radius:8px; padding:24px;
-        font-size:13px; line-height:1.7; white-space:pre-wrap;
-        word-break:break-word; text-align:left;
-      ">{{ text }}</pre>
-    </div>
-  `
-};
-
 // ============================================================
 // ROUTER
 // ============================================================
@@ -1361,8 +1323,7 @@ const routes = [
   { path: "/game/:author/:permlink",   component: GameView },
   { path: "/@:user",                   component: ProfileView },
   { path: "/leaderboard",              component: LeaderboardView },
-  { path: "/about",                    component: AboutView },
-  { path: "/license",                  component: LicenseView }
+  { path: "/about",                    component: AboutView }
 ];
 
 const router = createRouter({
@@ -1568,29 +1529,29 @@ const App = {
           vertical-align:middle; line-height:1;
         ">{{ inviteCount }}</span></router-link>
       <router-link
-        to="/leaderboard"
-        style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
-        exact-active-class="nav-active"
-      >Leaderboard</router-link>
-      <router-link
         v-if="username"
         :to="'/@' + username"
         style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
         exact-active-class="nav-active"
       >Games</router-link>
       <router-link
+        to="/leaderboard"
+        style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
+        exact-active-class="nav-active"
+      >Leaderboard</router-link>
+      <router-link
         to="/about"
         style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
         exact-active-class="nav-active"
       >About</router-link>
-      <router-link
-        to="/license"
+      <a
+        href="https://github.com/puncakbukit/reversteem"
+        target="_blank"
         style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
-        exact-active-class="nav-active"
-      >License</router-link>
+      >GitHub</a>
     </nav>
 
-    <template v-if="!currentRoute || !currentRoute.path.startsWith('/game/')">
+    <template v-if="!currentRoute || (!currentRoute.path.startsWith('/game/') && currentRoute.path !== '/leaderboard' && currentRoute.path !== '/about')">
       <auth-controls-component
         :username="username"
         :has-keychain="hasKeychain"
