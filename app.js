@@ -1365,6 +1365,7 @@ const App = {
     const notification = ref({ message: "", type: "error" });
     const timeoutMinutes = ref(DEFAULT_TIMEOUT_MINUTES);
     const isStartingGame = ref(false);
+    const showLoginForm = ref(false);
 
     const defaultTitle = computed(() => {
       const mins = timeoutMinutes.value;
@@ -1419,6 +1420,7 @@ const App = {
         hasKeychain.value = true;
         localStorage.setItem("steem_user", user);
         loginError.value = "";
+        showLoginForm.value = false;
       });
     }
 
@@ -1521,7 +1523,8 @@ const App = {
       getUserRating,
       inviteCount,
       currentRoute,
-      isStartingGame
+      isStartingGame,
+      showLoginForm
     };
   },
 
@@ -1566,6 +1569,18 @@ const App = {
         target="_blank"
         style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
       >GitHub</a>
+      <a
+        v-if="!username"
+        href="#"
+        @click.prevent="showLoginForm = !showLoginForm"
+        style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
+      >Login</a>
+      <a
+        v-else
+        href="#"
+        @click.prevent="logout(); showLoginForm = false;"
+        style="margin: 0 10px; text-decoration: none; color: #2e7d32; font-weight: bold;"
+      >Logout</a>
     </nav>
 
     <template v-if="!currentRoute || (!currentRoute.path.startsWith('/game/') && currentRoute.path !== '/leaderboard' && currentRoute.path !== '/about')">
@@ -1577,10 +1592,12 @@ const App = {
         :login-error="loginError"
         :default-title="defaultTitle"
         :is-submitting="isStartingGame"
+        :show-login-form="showLoginForm"
         @login="login"
         @logout="logout"
         @start-game="startGame"
         @update-timeout="updateTimeout"
+        @close-login-form="showLoginForm = false"
       ></auth-controls-component>
 
       <div v-if="keychainReady && !hasKeychain" class="keychain-notice">
